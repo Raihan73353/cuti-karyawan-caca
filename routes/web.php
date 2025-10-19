@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CutiController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 
 
 // Route::get('/', function () {
@@ -13,7 +14,9 @@ use App\Http\Controllers\AuthController;
 Route::view('/', 'index')->middleware('auth');
 
 
-Route::view('dashboard', 'index')->name('dashboard')->middleware('auth');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware('auth')
+    ->name('dashboard');
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('guest');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
@@ -38,3 +41,9 @@ Route::post('/cuti/{id}/reject', [CutiController::class, 'reject'])->name('cuti.
 
 
 Route::get('/buat-admin', [AuthController::class, 'seedAdmin']);
+
+
+Route::middleware('auth')->group(function () {
+    Route::get('/user/edit-password', [UserController::class, 'editPassword'])->name('user.editPassword');
+    Route::put('/user/update-password', [UserController::class, 'updatePassword'])->name('user.updatePassword');
+});

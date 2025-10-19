@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 class CutiController extends Controller
 {
     //
-   public function index()
+    public function index()
     {
         if (Auth::user()->role === 'admin') {
             $cutis = CutiRequest::with('user')->latest()->get();
@@ -46,15 +46,6 @@ class CutiController extends Controller
         ]);
 
         $user = Auth::user();
-        // Hitung lama cuti (hari)
-        $lama_cuti = (new \DateTime($request->tanggal_mulai))
-            ->diff(new \DateTime($request->tanggal_selesai))
-            ->days + 1;
-
-        // Pastikan sisa cuti cukup
-        if ($user->sisa_cuti < $lama_cuti) {
-            return back()->with('error', 'Sisa cuti kamu tidak mencukupi.');
-        }
 
         CutiRequest::create([
             'user_id' => $user->id,
@@ -82,23 +73,21 @@ class CutiController extends Controller
             return back()->with('error', 'Cuti sudah diproses sebelumnya.');
         }
 
-        // Hitung lama cuti
-        $lama_cuti = (new \DateTime($cuti->tanggal_mulai))
-            ->diff(new \DateTime($cuti->tanggal_selesai))
-            ->days + 1;
-
-        // Kurangi jatah cuti user
         $user = $cuti->user;
-        if ($user->sisa_cuti < $lama_cuti) {
-            return back()->with('error', 'Sisa cuti karyawan tidak cukup.');
+
+        // Cek apakah masih punya sisa cuti
+        if ($user->sisa_cuti < 1) {
+            return back()->with('error', 'Sisa cuti karyawan sudah habis.');
         }
 
-        $user->sisa_cuti -= $lama_cuti;
+        // Kurangi hanya 1 poin setiap pengajuan disetujui
+        $user->sisa_cuti -= 1;
         $user->save();
 
+        // Update status cuti menjadi approved
         $cuti->update(['status' => 'approved']);
 
-        return back()->with('success', 'Pengajuan cuti telah disetujui.');
+        return back()->with('success', 'Pengajuan cuti telah disetujui (potong 1 jatah cuti).');
     }
 
     /**
